@@ -1,0 +1,111 @@
+esphome:
+  name: grid-voltage-monitor
+  friendly_name: grid-voltage-monitor
+  comment: "Grid voltage monitor"
+
+substitutions:
+  zmpt_read_interval: 6s
+  zmpt_loop_count: "10"
+  device_description: "Monitor grid voltage in real time"
+  api_key: !secret voltage_monitor_api_key
+  wifi_ssid: !secret wifi_ssid
+  wifi_password: !secret wifi_password
+  web_server_username: !secret web_server_username
+  web_server_password: !secret web_server_password
+
+external_components:
+  - source: github://vgudzelyak/esphome-zmpt101b@main
+    components: [zmpt101b]
+    refresh: 0s
+
+esp32:
+  board: esp32-c3-m1i-kit
+  framework:
+    type: esp-idf
+    advanced:
+      flash_chip: generic
+
+logger:
+  level: WARN
+
+api:
+  encryption:
+    key: ${api_key}
+  reboot_timeout: 0s
+
+ota:
+  - platform: esphome
+
+wifi:
+  output_power: 8.5
+  ssid: ${wifi_ssid}
+  password: ${wifi_password}
+  fast_connect: true
+  power_save_mode: none
+
+web_server:
+  port: 80
+  auth:
+    username: ${web_server_username}
+    password: ${web_server_password}
+    type: digest
+
+sensor:
+  - platform: adc
+    pin: GPIO1
+    id: zmpt_adc_a
+    attenuation: 12db
+    update_interval: never
+    internal: true
+
+  - platform: adc
+    pin: GPIO3
+    id: zmpt_adc_b
+    attenuation: 12db
+    update_interval: never
+    internal: true
+    
+  - platform: adc
+    pin: GPIO4
+    id: zmpt_adc_c
+    attenuation: 12db
+    update_interval: never
+    internal: true
+
+  - platform: zmpt101b
+    name: "Phase A RMS Voltage"
+    adc_id: zmpt_adc_a
+    frequency: 50
+    sensitivity: 8.36
+    loop_count: ${zmpt_loop_count}
+    read_interval: ${zmpt_read_interval}
+
+  - platform: zmpt101b
+    name: "Phase B RMS Voltage"
+    adc_id: zmpt_adc_b
+    frequency: 50
+    sensitivity: 8.36
+    loop_count: ${zmpt_loop_count}
+    read_interval: ${zmpt_read_interval}
+
+  - platform: zmpt101b
+    name: "Phase C RMS Voltage"
+    adc_id: zmpt_adc_c
+    frequency: 50
+    sensitivity: 8.36
+    loop_count: ${zmpt_loop_count}
+    read_interval: ${zmpt_read_interval}
+
+  - platform: wifi_signal
+    name: "ESP32 Wi-Fi signal strength"
+    id: signal_strength
+    
+  - platform: internal_temperature
+    name: "ESP32 SOC temperature"
+    id: soc_temp
+
+text_sensor:
+  - platform: uptime
+    name: "ESP32 uptime"
+    id: uptime_human
+    entity_category: "diagnostic"

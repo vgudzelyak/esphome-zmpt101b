@@ -17,11 +17,11 @@ Note: It works perfectly with both the Arduino and ESP-IDF frameworks.
 
 ```
 external_components:
-  - source: github://hugokernel/esphome-zmpt101b@main
+  - source: github://vgudzelyak/esphome-zmpt101b@main
     components: [zmpt101b]
 
 sensor:
-  # First, you need to declare an adc platform...
+  # First, you need to declare an adc platform
   - platform: adc
     pin: GPIO36
     id: zmpt_adc
@@ -29,13 +29,27 @@ sensor:
     update_interval: never    # Prevent default polling, let zmpt101b handle it
     internal: true            # Hide raw ADC reading from Home Assistant
 
-  # ...then reference the previously declared adc platform in adc_id
+  # And then reference the previously declared adc platform in adc_id
   - platform: zmpt101b
     name: "${friendly_name} AC Voltage RMS"
     adc_id: zmpt_adc
     frequency: 50
     sensitivity: 8.36
 ```
+
+### Complete examples
+
+Ready-to-adapt configurations for an ESP32-C3 board using the ESP-IDF framework:
+
+| Example | Description | ADC pins |
+| --- | --- | --- |
+| [1_phase_example.yaml](1_phase_example.yaml) | Single-phase voltage monitor (one ZMPT101B module) | GPIO1 |
+| [3_phase_example.yaml](3_phase_example.yaml) | 3-phase voltage monitor (three ZMPT101B modules, one per phase) | GPIO1, GPIO3, GPIO4 |
+
+Before flashing, adjust the board and pins to your hardware and define these entries in your `secrets.yaml`:
+`voltage_monitor_api_key`, `wifi_ssid`, `wifi_password`, `web_server_username`, `web_server_password`.
+
+After flashing, calibrate `sensitivity` for each module (see [How to calibrate sensitivity](#how-to-calibrate-sensitivity)).
 
 ### Why declare the ADC sensor separately?
 
@@ -52,12 +66,12 @@ With several sensors or a single-core board (e.g. ESP32-C3), slow them down with
 ```
   - platform: zmpt101b
     # ...
-    read_interval: 1s   # Time between the starts of two readings (default: 0ms, continuous)
+    read_interval: 6s   # Time between the starts of two readings (default: 0ms, continuous)
     loop_count: 10      # Readings averaged per published value (default: 50)
 ```
 
 * CPU share ≈ number of sensors × 40 ms / `read_interval` (3 sensors at 1s: ~12%)
-* A value is published every `read_interval` × `loop_count` (here: 10s)
+* A value is published every `read_interval` × `loop_count` (here: 60s)
 
 The pause is non-blocking, so Wi-Fi, the API and the web server keep running during it.
 
