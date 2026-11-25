@@ -44,6 +44,23 @@ Instead, it uses an existing adc sensor declared in the YAML via adc_id:.
 This approach ensures maximum compatibility and avoids conflicts by ensures only one
 component manages the ADC hardware (a limitation on ESP32/ESP8266).
 
+### Reducing CPU load
+
+One reading keeps the CPU busy for two AC periods (~40 ms at 50 Hz), and by default readings run back to back.
+With several sensors or a single-core board (e.g. ESP32-C3), slow them down with `read_interval`:
+
+```
+  - platform: zmpt101b
+    # ...
+    read_interval: 1s   # Time between the starts of two readings (default: 0ms, continuous)
+    loop_count: 10      # Readings averaged per published value (default: 50)
+```
+
+* CPU share ≈ number of sensors × 40 ms / `read_interval` (3 sensors at 1s: ~12%)
+* A value is published every `read_interval` × `loop_count` (here: 10s)
+
+The pause is non-blocking, so Wi-Fi, the API and the web server keep running during it.
+
 ### How to calibrate sensitivity
 
 First, your sensor need to be calibrated according to [Abdurraziq/ZMPT101B-arduino#steep](https://github.com/Abdurraziq/ZMPT101B-arduino#steep)
